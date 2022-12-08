@@ -1,11 +1,7 @@
 
 name: CI
 
-on:
-  push:
-    branches: [ master ]
-  pull_request:
-    branches: [ master ]
+on: [push, pull_request]
 
 env:
   CARGO_TERM_COLOR: always
@@ -35,6 +31,7 @@ jobs:
         emulator:
           - name: trezor
           - name: ledger
+          - name: coldcard
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -58,7 +55,10 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha
       - name: Run simulator image
-        run: docker run --name simulator --network=host hwi/${{ matrix.emulator.name }}_emulator &
+        run: docker run --name simulator --network=host -v /tmp:/tmp hwi/${{ matrix.emulator.name }}_emulator &
+      - name: Update Coldcard socket permission
+        if: ${{ matrix.emulator.name == 'coldcard' }}
+        run: sleep 30 && chmod 777 /tmp/ckcc-simulator.sock
       - name: Install Python
         uses: actions/setup-python@v4
         with:
